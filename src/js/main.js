@@ -49,6 +49,7 @@ let D = document,
     game_won = false,
     game_won_scrolled = false,
     game_won_bullets_fired = false,
+    skipped = false,
     currentTime = null,
     bestTime = {
         time: 99999999,
@@ -76,7 +77,9 @@ const jump = jsfxr([0,,0.1948,0.1242,0.3918,0.7943,0.0103,-0.5478,,,,,,0.3884,0.
     // hit = jsfxr([1,,0.0252,,0.2921,0.3328,,-0.358,,,,,,,,,,,1,,,,,0.5])
     hit = jsfxr([0,,0.309,,0.1242,0.4867,,0.3666,,,,,,0.2139,,0.4974,,,1,,,,,0.5]),
     message = jsfxr([0,0.0022,0.4543,0.2404,0.8076,0.5005,,,0.5697,,,-0.0109,0.5901,,-0.3525,,0.0004,0.2765,0.9915,0.7359,0.4253,,0.0097,0.26]),
-    init = jsfxr([1,,0.2975,,0.4004,0.244,,0.4834,,,,,,,,0.486,,,1,,,,,0.26])
+    init = jsfxr([1,,0.2975,,0.4004,0.244,,0.4834,,,,,,,,0.486,,,1,,,,,0.26]),
+    winning = jsfxr([3,0.5512,0.0161,0.5228,0.8802,0.0014,,0.362,0.0582,,-0.3579,0.1778,0.4555,0.5,0.992,-0.0377,-0.0339,0.072,0.495,0.0101,0.8163,0.0362,0.3013,0.5]),
+    enemyDecay = jsfxr([3,0.03,0.27,0.75,0.76,0.0237,,,,,,,,,,0.5116,,,1,,,,,0.5])
 ;
 
 const PLANETS = [
@@ -86,27 +89,27 @@ const PLANETS = [
     {x: 160*4, speed: 1, vertical: 'b', horizontalDir: 'l'},
     {x: 200*4, speed: 1, vertical: 't', horizontalDir: 'r'},
     {x: 240*4, speed: 3, vertical: 'b', horizontalDir: 'r'},
-    {x: 280*4, speed: 3, vertical: 't', horizontalDir: 'l'},
-    {x: 320*4, speed: 1, vertical: 'b', horizontalDir: 'l'},
-    {x: 360*4, speed: 1, vertical: 't', horizontalDir: 'r'},
-    {x: 80, speed: 2, vertical: 't', horizontalDir: 'r'},
-    {x: 80*6, speed: 3, vertical: 'b', horizontalDir: 'r'},
-    {x: 120*6, speed: 3, vertical: 't', horizontalDir: 'l'},
-    {x: 160*6, speed: 1, vertical: 'b', horizontalDir: 'l'},
-    {x: 200*6, speed: 1, vertical: 't', horizontalDir: 'r'},
-    {x: 240*6, speed: 3, vertical: 'b', horizontalDir: 'r'},
-    {x: 280*6, speed: 3, vertical: 't', horizontalDir: 'l'},
-    {x: 320*6, speed: 1, vertical: 'b', horizontalDir: 'l'},
-    {x: 360*6, speed: 1, vertical: 't', horizontalDir: 'r'},
-    {x: 80, speed: 2, vertical: 't', horizontalDir: 'r'},
-    {x: 80*8, speed: 3, vertical: 'b', horizontalDir: 'r'},
-    {x: 120*8, speed: 3, vertical: 't', horizontalDir: 'l'},
-    {x: 160*8, speed: 1, vertical: 'b', horizontalDir: 'l'},
-    {x: 200*8, speed: 1, vertical: 't', horizontalDir: 'r'},
-    {x: 240*8, speed: 3, vertical: 'b', horizontalDir: 'r'},
-    {x: 280*8, speed: 3, vertical: 't', horizontalDir: 'l'},
-    {x: 320*8, speed: 1, vertical: 'b', horizontalDir: 'l'},
-    {x: 360*8, speed: 1, vertical: 't', horizontalDir: 'r'},
+    // {x: 280*4, speed: 3, vertical: 't', horizontalDir: 'l'},
+    // {x: 320*4, speed: 1, vertical: 'b', horizontalDir: 'l'},
+    // {x: 360*4, speed: 1, vertical: 't', horizontalDir: 'r'},
+    // {x: 80, speed: 2, vertical: 't', horizontalDir: 'r'},
+    // {x: 80*6, speed: 3, vertical: 'b', horizontalDir: 'r'},
+    // {x: 120*6, speed: 3, vertical: 't', horizontalDir: 'l'},
+    // {x: 160*6, speed: 1, vertical: 'b', horizontalDir: 'l'},
+    // {x: 200*6, speed: 1, vertical: 't', horizontalDir: 'r'},
+    // {x: 240*6, speed: 3, vertical: 'b', horizontalDir: 'r'},
+    // {x: 280*6, speed: 3, vertical: 't', horizontalDir: 'l'},
+    // {x: 320*6, speed: 1, vertical: 'b', horizontalDir: 'l'},
+    // {x: 360*6, speed: 1, vertical: 't', horizontalDir: 'r'},
+    // {x: 80, speed: 2, vertical: 't', horizontalDir: 'r'},
+    // {x: 80*8, speed: 3, vertical: 'b', horizontalDir: 'r'},
+    // {x: 120*8, speed: 3, vertical: 't', horizontalDir: 'l'},
+    // {x: 160*8, speed: 1, vertical: 'b', horizontalDir: 'l'},
+    // {x: 200*8, speed: 1, vertical: 't', horizontalDir: 'r'},
+    // {x: 240*8, speed: 3, vertical: 'b', horizontalDir: 'r'},
+    // {x: 280*8, speed: 3, vertical: 't', horizontalDir: 'l'},
+    // {x: 320*8, speed: 1, vertical: 'b', horizontalDir: 'l'},
+    // {x: 360*8, speed: 1, vertical: 't', horizontalDir: 'r'},
 ]
 
 const Utils = {
@@ -279,6 +282,7 @@ function Enemy() {
             // context.lineTo(280, C.height / 2);
             context.fill();
             if (game_won_bullets_fired) {
+                Utils.playSound(enemyDecay);
                 E.y++;
             }
         });
@@ -649,6 +653,7 @@ function Player(x, y) {
                         if (PC.meta.connectedPlanets === PC.meta.totalPlanets) {
                             console.log('win!');
                             game_won = true;
+                            Utils.playSound(winning);
                             Utils.winningScroll();
                         }
                     }
@@ -689,6 +694,7 @@ function Player(x, y) {
                         if (PC.meta.connectedPlanets === PC.meta.totalPlanets) {
                             console.log('win!');
                             game_won = true;
+                            Utils.playSound(winning);
                             Utils.winningScroll();
                         }
                     }
@@ -769,6 +775,11 @@ function TextBox() {
                 const translateLoop = setInterval(() => {
                     // context.clearRect(VIEW_WIDTH / 2 - DIALOG_WIDTH / 2, C.height / 2 - DIALOG_HEIGHT / 2, DIALOG_WIDTH, DIALOG_HEIGHT);
                     context.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+                    // draw skip button
+                    context.strokeStyle='white';
+                    context.strokeRect(VIEW_WIDTH / 2 - PLAY_BTN_WIDTH / 2, C.height - PLAY_BTN_HEIGHT - 10, PLAY_BTN_WIDTH, PLAY_BTN_HEIGHT);
+                    context.fillText('SKIP >', VIEW_WIDTH / 2 - PLAY_BTN_WIDTH / 2 + 10, C.height - PLAY_BTN_HEIGHT + 5);
     
                     context.strokeStyle='white';
                     context.strokeRect(VIEW_WIDTH / 2 - DIALOG_WIDTH / 2, C.height / 2 - DIALOG_HEIGHT / 2, DIALOG_WIDTH, DIALOG_HEIGHT);
@@ -967,25 +978,40 @@ onload = async function() {
     context.fillText('Play', 2 * VIEW_WIDTH / 3 - PLAY_BTN_WIDTH / 2 + 10, C.height / 2);
 }
 
+const checkIfSkipped = function(evt) {
+    // debugger;
+    const targetX = evt.x || (evt.touches && evt.touches[0] && evt.touches[0].clientX);
+    const targetY = evt.y || (evt.touches && evt.touches[0] && evt.touches[0].clientY);
+
+    console.log(targetX, VIEW_WIDTH / 2);
+    console.log(targetY, C.height - 100);
+
+    if (targetX > VIEW_WIDTH / 2 - PLAY_BTN_WIDTH / 2 && targetX < VIEW_WIDTH / 2 + PLAY_BTN_WIDTH / 2 && 
+        targetY > CANVAS_HEIGHT - PLAY_BTN_HEIGHT - 10 && targetY < CANVAS_HEIGHT + PLAY_BTN_HEIGHT - 10) {
+        skipped = true;
+        // only touchend event is required for mobile gameplay
+        window.removeEventListener("touchstart", handleClick, true);
+        window.addEventListener("touchend", handleClick, true);
+        new Game();
+    }
+}
+
 const checkPlayButtonClicked = async function(evt) {
 
-    const targetX = evt.x || (evt.touches && evt.touches[0].clientX);
-    const targetY = evt.y || (evt.touches && evt.touches[0].clientY);
+    const targetX = evt.x || (evt.touches && evt.touches[0] && evt.touches[0].clientX);
+    const targetY = evt.y || (evt.touches && evt.touches[0] && evt.touches[0].clientY);
 
     if (targetX > 2 * VIEW_WIDTH / 3 - PLAY_BTN_WIDTH / 2 && targetX < 2 * VIEW_WIDTH / 3 + PLAY_BTN_WIDTH / 2 && 
         targetY > C.height / 2 - PLAY_BTN_HEIGHT / 2 && targetY < C.height / 2 + PLAY_BTN_HEIGHT / 2) {
 
         game_started = true;
-        // only touchend event is required for mobile gameplay
-        window.removeEventListener("touchstart", handleClick, true);
-        window.addEventListener("touchend", handleClick, true);
         context.clearRect(0, 0, C.width, C.height);
 
         let text = new TextBox();
 
-        await text.newMessage('Little Nobi: Hello, is anyone online ?');
-        await text.newMessage('0 / 29 planets online');
-        await text.newMessage('Oh no, looks like..');
+        !skipped && await text.newMessage('Little Nobi: Hello, is anyone online ?');
+        !skipped && await text.newMessage('0 / 29 planets online');
+        !skipped && await text.newMessage('Oh no, looks like..');
         // await text.newMessage('And now my eyes are on you !!');
         // await text.newMessage('Nobi: Waaaaat! Noooo');
 
@@ -996,17 +1022,20 @@ const checkPlayButtonClicked = async function(evt) {
         // await text.newMessage('is when you will be destroyed !');
 
         // await text.newMessage('The world is in grave danger!');
-        await text.newMessage('Tadka, the alien spaceship');
-        await text.newMessage('has destroyed the connectivity of all the planets.');
+        !skipped && await text.newMessage('Tadka, the alien spaceship');
+        !skipped && await text.newMessage('has destroyed the connectivity of all the planets.');
         // await text.newMessage('Only your planet Zobi remains.');
         // await text.newMessage('Rest all planets have gone Offline')
-        await text.newMessage('I have to re-connect the world');
-        await text.newMessage('through my special wires..');
-        await text.newMessage('Only when we are Together Again');
-        await text.newMessage('is when Tadka will be destroyed !');
-        await text.newMessage('Let\'s go .!');
+        !skipped && await text.newMessage('I have to re-connect the world');
+        !skipped && await text.newMessage('through my special wires..');
+        !skipped && await text.newMessage('Only when we are Together Again');
+        !skipped && await text.newMessage('is when Tadka will be destroyed !');
+        !skipped && await text.newMessage('Let\'s go .!');
 
-        setTimeout(() => {
+        !skipped && setTimeout(() => {
+            // only touchend event is required for mobile gameplay
+            window.removeEventListener("touchstart", handleClick, true);
+            window.addEventListener("touchend", handleClick, true);
             new Game();
         }, 2000);
     }
@@ -1028,6 +1057,10 @@ const handleClick = (evt) => {
         checkPlayButtonClicked(evt);
         return;
     }
+    if (!P) {
+        checkIfSkipped(evt);
+    }
+    
     if (P && P.crossing) {
         return;
     }
