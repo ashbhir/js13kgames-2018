@@ -71,10 +71,7 @@ let Player_dY = 0,
     PrevPlayerY = null;
 
 const jump = jsfxr([0,,0.1948,0.1242,0.3918,0.7943,0.0103,-0.5478,,,,,,0.3884,0.1022,,0.1452,-0.0243,1,,,0.027,,0.5]),
-//jsfxr([2,,0.2539,0.0463,0.3061,0.5876,0.2,-0.2379,,,,,,0.0012,0.0939,,,,1,,,0.0702,,0.5]),
     explosion = jsfxr([3,,0.3197,0.6861,0.154,0.0513,,-0.2049,,,,0.261,0.6416,,,,,,1,,,,,0.5]),
-    // explosion = jsfxr([3,,0.3204,0.3452,0.4483,0.0112,,,,,,0.5617,0.7505,,,,,,1,,,,,0.5]),
-    // hit = jsfxr([1,,0.0252,,0.2921,0.3328,,-0.358,,,,,,,,,,,1,,,,,0.5])
     hit = jsfxr([0,,0.309,,0.1242,0.4867,,0.3666,,,,,,0.2139,,0.4974,,,1,,,,,0.5]),
     message = jsfxr([0,0.0022,0.4543,0.2404,0.8076,0.5005,,,0.5697,,,-0.0109,0.5901,,-0.3525,,0.0004,0.2765,0.9915,0.7359,0.4253,,0.0097,0.26]),
     init = jsfxr([1,,0.2975,,0.4004,0.244,,0.4834,,,,,,,,0.486,,,1,,,,,0.26]),
@@ -82,35 +79,33 @@ const jump = jsfxr([0,,0.1948,0.1242,0.3918,0.7943,0.0103,-0.5478,,,,,,0.3884,0.
     enemyDecay = jsfxr([3,0.03,0.27,0.75,0.76,0.0237,,,,,,,,,,0.5116,,,1,,,,,0.5])
 ;
 
-const PLANETS = [
-    {x: 80, speed: 2, vertical: 't', horizontalDir: 'r'},
-    {x: 80*4, speed: 3, vertical: 'b', horizontalDir: 'r'},
-    {x: 120*4, speed: 3, vertical: 't', horizontalDir: 'l'},
-    {x: 160*4, speed: 1, vertical: 'b', horizontalDir: 'l'},
-    {x: 200*4, speed: 1, vertical: 't', horizontalDir: 'r'},
-    {x: 240*4, speed: 3, vertical: 'b', horizontalDir: 'r'},
-    // {x: 280*4, speed: 3, vertical: 't', horizontalDir: 'l'},
-    // {x: 320*4, speed: 1, vertical: 'b', horizontalDir: 'l'},
-    // {x: 360*4, speed: 1, vertical: 't', horizontalDir: 'r'},
-    // {x: 80, speed: 2, vertical: 't', horizontalDir: 'r'},
-    // {x: 80*6, speed: 3, vertical: 'b', horizontalDir: 'r'},
-    // {x: 120*6, speed: 3, vertical: 't', horizontalDir: 'l'},
-    // {x: 160*6, speed: 1, vertical: 'b', horizontalDir: 'l'},
-    // {x: 200*6, speed: 1, vertical: 't', horizontalDir: 'r'},
-    // {x: 240*6, speed: 3, vertical: 'b', horizontalDir: 'r'},
-    // {x: 280*6, speed: 3, vertical: 't', horizontalDir: 'l'},
-    // {x: 320*6, speed: 1, vertical: 'b', horizontalDir: 'l'},
-    // {x: 360*6, speed: 1, vertical: 't', horizontalDir: 'r'},
-    // {x: 80, speed: 2, vertical: 't', horizontalDir: 'r'},
-    // {x: 80*8, speed: 3, vertical: 'b', horizontalDir: 'r'},
-    // {x: 120*8, speed: 3, vertical: 't', horizontalDir: 'l'},
-    // {x: 160*8, speed: 1, vertical: 'b', horizontalDir: 'l'},
-    // {x: 200*8, speed: 1, vertical: 't', horizontalDir: 'r'},
-    // {x: 240*8, speed: 3, vertical: 'b', horizontalDir: 'r'},
-    // {x: 280*8, speed: 3, vertical: 't', horizontalDir: 'l'},
-    // {x: 320*8, speed: 1, vertical: 'b', horizontalDir: 'l'},
-    // {x: 360*8, speed: 1, vertical: 't', horizontalDir: 'r'},
-]
+const PLANETS = [];
+
+(function planetInitialize() {
+    let i = 0;
+    const step = mobile ? 80 : 160;
+    while (i * (step) < CANVAS_WIDTH) {
+        const xPos = Math.min(Math.max(i * (CANVAS_WIDTH / 10), PLANET_WIDTH), CANVAS_WIDTH - PLANET_WIDTH);
+        PLANETS.push({
+            x: xPos,
+            speed: (i % 3) + 1,
+            onTop: !!(i % 2),
+            movingLeft: Math.random(0,1) > 0.5 ? true: false,
+            zone: (xPos < CANVAS_WIDTH / 3) ? 1 : (xPos < 2 * CANVAS_WIDTH / 3 ? 2 : 3)
+        });
+
+        if (i * (step * 2) < CANVAS_WIDTH) {
+            PLANETS.push({
+                x: Math.min(Math.max(Math.floor(i * (4/3) *(CANVAS_WIDTH / 10)), PLANET_WIDTH), CANVAS_WIDTH - PLANET_WIDTH),
+                speed: 2.5,
+                onTop: !!(i % 2),
+                movingLeft: Math.random(0,1) > 0.5 ? true: false,
+                zone: 0
+            });
+        }
+        i++;
+    }
+})();
 
 const Utils = {
     drawLine: function(x1, y1, x2, y2, dashed) {
@@ -177,7 +172,6 @@ const Utils = {
         }
     },
     winningScroll: () => {
-        const currentValue = DOM.scrollLeft;
         const finalValue = CANVAS_WIDTH - VIEW_WIDTH;
 
         const inc = setInterval(() => {
@@ -263,12 +257,10 @@ function WinningBullet(x, y, theta, top) {
 function Enemy() {
     E = this;
     E.x = C.width - 40;
-    // E.x = 280;
     E.y = C.height / 2;
     E.theta = 0;
     E.bullet = null;
-    // bullets throw at the Player with constant speed
-    // PRO TIP: You can short circuit the enemy too
+    
     E.render = () => {
         Utils.renderOnce(() => {
             context.fillStyle='blue';
@@ -277,9 +269,6 @@ function Enemy() {
             context.moveTo(C.width, E.y - 15);
             context.lineTo(C.width, E.y + 15);
             context.lineTo(E.x, E.y);
-            // context.moveTo(300, E.y - 15);
-            // context.lineTo(300, E.y + 15);
-            // context.lineTo(280, C.height / 2);
             context.fill();
             if (game_won_bullets_fired) {
                 Utils.playSound(enemyDecay);
@@ -350,7 +339,6 @@ function GunPointer(theta) {
         const theta = GP.theta;
         const radians = (theta / 180) * PI;
         const x1 = P.x;
-        //const y1 = P.y + (P.isTop() ? 1 : -1) * (PLAYER_HEIGHT / 2) + (P.isTop() ? 1 : -1) * PLAYER_GUN_GAP;
         const y1 = P.y;
         const x2 = P.x + POINTER_LENGTH * Math.cos(radians);
         const y2 = P.y + (P.isTop() ? 1 : -1) * POINTER_LENGTH * Math.sin(radians);
@@ -407,12 +395,13 @@ function WireHolder(x, y) {
     };
 }
 
-function Planet(x, y, speed, dir) {
+function Planet(x, y, speed, movingLeft, zone) {
     return {
         x,
         y,
         speed,
-        dir,
+        movingLeft,
+        zone,
         isMoving: true,
         hasPlayer: false,
         wireHolders: [],
@@ -425,10 +414,10 @@ function PlanetSet() {
     PS = this;
     PS.attached = [];
 
-    PS.addPlanet = (x, speed, vertical, horizontalDir) => {
-        vertical === 't' ? 
-            PS.attached.push(new Planet(x, PLANET_HEIGHT / 2, speed, horizontalDir)) :
-            PS.attached.push(new Planet(x, C.height - PLANET_HEIGHT / 2, speed, horizontalDir));
+    PS.addPlanet = (x, speed, onTop, movingLeft, zone) => {
+        onTop ? 
+            PS.attached.push(new Planet(x, PLANET_HEIGHT / 2, speed, movingLeft, zone)) :
+            PS.attached.push(new Planet(x, C.height - PLANET_HEIGHT / 2, speed, movingLeft, zone));
     }
 
     PS.intersects = (planetPrev, planetNext) => {
@@ -523,9 +512,9 @@ function PlanetSet() {
                 //     PLANET_WIDTH,
                 //     PLANET_HEIGHT
                 // );
-                // context.fillStyle='black';
-                // context.font='20px sans-serif';
-                // context.fillText(planet.hasPlayer ? '1': '0', planet.x, planet.y);
+                context.fillStyle='black';
+                context.font='20px sans-serif';
+                context.fillText(index, planet.x, planet.y);
             });
 
             Utils.renderOnce(() => {
@@ -544,17 +533,38 @@ function PlanetSet() {
 
     PS.update = () => {
         let prevPlanet = null;
-        PS.attached.forEach(planet => {
+        PS.attached.forEach((planet, index) => {
             if (planet.isMoving) {
-                planet.x = planet.x + (planet.dir==='l'? -1 : 1) * planet.speed;
+                const prevX = planet.x;
+                planet.x = planet.x + (planet.movingLeft ? -1 : 1) * planet.speed;
 
-                if (PS.intersects(prevPlanet, planet)) {
-                    planet.dir = planet.dir === 'l'? 'r': 'l';
-                    prevPlanet.dir = prevPlanet.dir === 'l'? 'r': 'l';
-                }
-    
-                if (planet.x < PLANET_WIDTH / 2 || planet.x > C.width - PLANET_WIDTH / 2) {
-                    planet.dir = planet.dir === 'l'? 'r': 'l';
+                if (planet.zone === 1) {
+                    const lowerX = 0;
+                    const upperX = CANVAS_WIDTH / 3;
+                    if (planet.x < lowerX || planet.x > upperX) {
+                        planet.movingLeft = !planet.movingLeft;
+                        planet.x = prevX;
+                    }
+
+                } else if (planet.zone === 2) {
+                    const lowerX = CANVAS_WIDTH / 3;
+                    const upperX = 2 * CANVAS_WIDTH / 3;
+                    if (planet.x < lowerX || planet.x > upperX) {
+                        planet.movingLeft = !planet.movingLeft;
+                        planet.x = prevX;
+                    }
+                    
+                } else if (planet.zone === 3) {
+                    const lowerX = 2 * CANVAS_WIDTH / 3;
+                    const upperX = CANVAS_WIDTH;
+                    if (planet.x < lowerX || planet.x > upperX) {
+                        planet.movingLeft = !planet.movingLeft;
+                        planet.x = prevX;
+                    }
+
+                } else if (planet.x < 0 || planet.x > C.width) {
+                    planet.movingLeft = !planet.movingLeft;
+                    planet.x = prevX;
                 }
             }
 
@@ -873,7 +883,7 @@ function Game() {
         PC.meta.connectedPlanets = 0;
         PC.meta.totalPlanets = PLANETS.length;
         PLANETS.forEach((planet) => {
-            PS.addPlanet(planet.x, planet.speed, planet.vertical, planet.horizontalDir);
+            PS.addPlanet(planet.x, planet.speed, planet.onTop, planet.movingLeft, planet.zone);
         });
         game_won_scrolled = false;
         game_won = false;
@@ -991,7 +1001,9 @@ const checkIfSkipped = function(evt) {
         skipped = true;
         // only touchend event is required for mobile gameplay
         window.removeEventListener("touchstart", handleClick, true);
-        window.addEventListener("touchend", handleClick, true);
+        setTimeout(() => {
+            window.addEventListener("touchend", handleClick, true);
+        }, 100);
         new Game();
     }
 }
@@ -1057,8 +1069,9 @@ const handleClick = (evt) => {
         checkPlayButtonClicked(evt);
         return;
     }
-    if (!P) {
+    if (!P && !skipped) {
         checkIfSkipped(evt);
+        return;
     }
     
     if (P && P.crossing) {
