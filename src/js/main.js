@@ -314,13 +314,7 @@ function Enemy() {
                         HEALTH > 25 ? 'white': 'red');
                 }
                 if (targetPlanet.bulletsCount >= MAX_BULLETS) {
-                    // destroy Planet
-                    console.log('removing planet');
                     G.init();
-                    if (targetPlanet.hasPlayer) {
-                        // Game Over
-                        console.log('Game over!');
-                    }
                 }
                 E.bullet = null;
             }
@@ -503,9 +497,6 @@ function PlanetSet() {
                     
                 }
  
-                context.fillStyle='black';
-                context.font='20px sans-serif';
-                context.fillText(index, planet.x, planet.y);
             });
 
             Utils.renderOnce(() => {
@@ -953,9 +944,6 @@ onload = async function() {
 const checkIfSkipped = function(evt) {
     const targetX = evt.x || (evt.touches && evt.touches[0] && evt.touches[0].clientX);
     const targetY = evt.y || (evt.touches && evt.touches[0] && evt.touches[0].clientY);
-
-    console.log(targetX, VIEW_WIDTH / 2);
-    console.log(targetY, C.height - 100);
 
     if (targetX > VIEW_WIDTH / 2 - PLAY_BTN_WIDTH / 2 && targetX < VIEW_WIDTH / 2 + PLAY_BTN_WIDTH / 2 && 
         targetY > CANVAS_HEIGHT - PLAY_BTN_HEIGHT - 10 && targetY < CANVAS_HEIGHT + PLAY_BTN_HEIGHT - 10) {
