@@ -492,9 +492,6 @@ function PlanetSet() {
                     let i = 0, coord = null;
                     while (bulletsCount) {
                         coord = coords[i % 4];
-                        // let g = context.createRadialGradient(coord.x, coord.y, DAMAGE_WIDTH / 2, coord.x, coord.y, DAMAGE_WIDTH * 2);
-                        // g.addColorStop(0, `hsla(0, 0%, 0%, 0.5)`);
-                        // g.addColorStop(1, `hsla(0, 0%, 50%, 0.5)`);
                         context.fillStyle = 'hsla(0, 0%, 50%, 0.5)';
                         
                         context.beginPath();
@@ -505,13 +502,7 @@ function PlanetSet() {
                     }
                     
                 }
-                
-                // context.fillRect(
-                //     planet.x - PLANET_WIDTH / 2,
-                //     planet.y - PLANET_HEIGHT / 2,
-                //     PLANET_WIDTH,
-                //     PLANET_HEIGHT
-                // );
+ 
                 context.fillStyle='black';
                 context.font='20px sans-serif';
                 context.fillText(index, planet.x, planet.y);
@@ -568,11 +559,6 @@ function PlanetSet() {
                 }
             }
 
-            // if (planet.hasPlayer) {
-            //     P.x = planet.x;
-            //     P.y = planet.y + (dir === 'top'? 1 : -1) * PLANET_HEIGHT / 2 + (dir === 'top'? 1 : -1) * PLAYER_HEIGHT / 2;
-            // }
-
             prevPlanet = planet;
 
             if (game_won_scrolled && planet.bullet == null) {
@@ -621,12 +607,6 @@ function Player(x, y) {
 
     P.render = () => {
         Utils.renderOnce(() => {
-            // let g = context.createRadialGradient(P.x, P.y, PLAYER_WIDTH / 2, P.x, P.y, PLAYER_WIDTH);
-            // g.addColorStop(0, `hsla(0, 100%, 100%, 1)`);
-            // g.addColorStop(1, `hsla(0, 100%, 100%, 0.5)`)
-            // context.fillStyle = 'white';
-            // context.arc(P.x, P.y, PLAYER_WIDTH / 2 + 2, 0, 10);
-            // context.fill();
             context.fillStyle='red';
             context.fillRect(P.x - PLAYER_WIDTH / 2, P.y - PLAYER_HEIGHT / 2, PLAYER_WIDTH, PLAYER_HEIGHT);
         });
@@ -783,7 +763,6 @@ function TextBox() {
         function waitForTranslateLoop() {
             return new Promise((resolve) => {
                 const translateLoop = setInterval(() => {
-                    // context.clearRect(VIEW_WIDTH / 2 - DIALOG_WIDTH / 2, C.height / 2 - DIALOG_HEIGHT / 2, DIALOG_WIDTH, DIALOG_HEIGHT);
                     context.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
                     // draw skip button
@@ -963,24 +942,7 @@ onload = async function() {
     context.fillStyle = 'white';
     context.textAlign = 'left';
     context.font = mobile ? '12px Courier New' : '18px Courier New';
-    // Together Again
-    // The world is in danger, an evil alien spaceship Tara has broken all connections between the planets
-    // and they have all gone offline!
-    // Only your planet Zobi remains that still has some connectivity left
-    // It's your job now to connect the world again - Only when y'all be together again is when Tara will be destroyed
-    // Beware though, Tara has its eyes on you and will keep attacking the places you got to
-
-    // Controls
-    // Move your mouse to position the gun pointer
-    // Move your finger
-    // Click anywhere on the screen to throw the wire at the desired location
-    // Release touch
-
-    // Play
-    // Level
-    // Easy - Tara has just woken up from sleep
-    // Medium - Tara is fierce, so better not go near it
-    // Hard - No matter where you, Tara is not going to spare you
+    
     context.fillText('Together Again', VIEW_WIDTH / 3 - 100, C.height / 2);
     context.strokeStyle='white';
     context.strokeRect(2 * VIEW_WIDTH / 3 - PLAY_BTN_WIDTH / 2, C.height / 2 - PLAY_BTN_HEIGHT / 2, PLAY_BTN_WIDTH, PLAY_BTN_HEIGHT);
@@ -989,7 +951,6 @@ onload = async function() {
 }
 
 const checkIfSkipped = function(evt) {
-    // debugger;
     const targetX = evt.x || (evt.touches && evt.touches[0] && evt.touches[0].clientX);
     const targetY = evt.y || (evt.touches && evt.touches[0] && evt.touches[0].clientY);
 
@@ -1024,20 +985,9 @@ const checkPlayButtonClicked = async function(evt) {
         !skipped && await text.newMessage('Little Nobi: Hello, is anyone online ?');
         !skipped && await text.newMessage('0 / 29 planets online');
         !skipped && await text.newMessage('Oh no, looks like..');
-        // await text.newMessage('And now my eyes are on you !!');
-        // await text.newMessage('Nobi: Waaaaat! Noooo');
-
-        // text = new TextBox();
-
-        // await text.newMessage('I am gonna reconnect everyone through my special wire');
-        // await text.newMessage('Coz only when we are Together Again');
-        // await text.newMessage('is when you will be destroyed !');
-
-        // await text.newMessage('The world is in grave danger!');
         !skipped && await text.newMessage('Tadka, the alien spaceship');
         !skipped && await text.newMessage('has destroyed the connectivity of all the planets.');
-        // await text.newMessage('Only your planet Zobi remains.');
-        // await text.newMessage('Rest all planets have gone Offline')
+        
         !skipped && await text.newMessage('I have to re-connect the world');
         !skipped && await text.newMessage('through my special wires..');
         !skipped && await text.newMessage('Only when we are Together Again');
@@ -1064,8 +1014,6 @@ const handleMovement = (evt) => {
 
 const handleClick = (evt) => {
     if (!game_started) {
-        // game_started = true;
-        // new Game();
         checkPlayButtonClicked(evt);
         return;
     }
