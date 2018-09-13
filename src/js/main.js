@@ -12,6 +12,11 @@ let D = document,
     PS, // PlanetSet
     E, // Enemy
     B, // Bullet
+    TB, // TextBox
+    PC, // PlayerCount
+    HT, // HealthText
+    WT, // WinText
+    HS, // High Score
     PI = Math.PI,
     CANVAS_WIDTH = (window.innerWidth && window.innerWidth * 3) || 4000,
     CANVAS_HEIGHT = (window.innerHeight && window.innerHeight - 100) || 400,
@@ -31,47 +36,74 @@ let D = document,
     BULLET_WIDTH = 40,
     BULLET_HEIGHT = 10,
     BULLET_SPEED = 10,
-    DAMAGE_WIDTH = PLANET_WIDTH / 2
+    DAMAGE_WIDTH = PLANET_WIDTH / 2,
+    DIALOG_WIDTH = (mobile ? 2: 1) * VIEW_WIDTH / 3,
+    DIALOG_HEIGHT = 2 * CANVAS_HEIGHT / 3,
+    CRISP_TEXT_WIDTH = 200,
+    CRISP_TEXT_HEIGHT = 50,
+    MAX_BULLETS = 8,
+    PLAY_BTN_HEIGHT = 40,
+    PLAY_BTN_WIDTH = 120,
+    game_started = false,
+    game_won = false,
+    currentTime = null,
+    bestTime = {
+        time: 99999999,
+        dom: document.getElementsByClassName('best-time__timer')[0]
+     }
     ;
+
+// Request animation frame setup
+window.requestAnimationFrame = (function(){
+    return  window.requestAnimationFrame        ||
+            window.webkitRequestAnimationFrame  ||
+            window.mozRequestAnimationFrame     ||
+            function(callback){window.setTimeout(callback, 17);};
+})();
 
 let Player_dY = 0,
     lastPlanet = null,
-    lastX = 0;
+    lastX = 0,
+    PrevPlayerY = null;
 
 const jump = jsfxr([0,,0.1948,0.1242,0.3918,0.7943,0.0103,-0.5478,,,,,,0.3884,0.1022,,0.1452,-0.0243,1,,,0.027,,0.5]),
 //jsfxr([2,,0.2539,0.0463,0.3061,0.5876,0.2,-0.2379,,,,,,0.0012,0.0939,,,,1,,,0.0702,,0.5]),
     explosion = jsfxr([3,,0.3197,0.6861,0.154,0.0513,,-0.2049,,,,0.261,0.6416,,,,,,1,,,,,0.5]),
-    hit = jsfxr([1,,0.0252,,0.2921,0.3328,,-0.358,,,,,,,,,,,1,,,,,0.5])
+    // explosion = jsfxr([3,,0.3204,0.3452,0.4483,0.0112,,,,,,0.5617,0.7505,,,,,,1,,,,,0.5]),
+    // hit = jsfxr([1,,0.0252,,0.2921,0.3328,,-0.358,,,,,,,,,,,1,,,,,0.5])
+    hit = jsfxr([0,,0.309,,0.1242,0.4867,,0.3666,,,,,,0.2139,,0.4974,,,1,,,,,0.5]),
+    message = jsfxr([0,0.0022,0.4543,0.2404,0.8076,0.5005,,,0.5697,,,-0.0109,0.5901,,-0.3525,,0.0004,0.2765,0.9915,0.7359,0.4253,,0.0097,0.26]),
+    init = jsfxr([1,,0.2975,,0.4004,0.244,,0.4834,,,,,,,,0.486,,,1,,,,,0.26])
 ;
 
 const PLANETS = [
     {x: 80, speed: 2, vertical: 't', horizontalDir: 'r'},
     {x: 80*4, speed: 3, vertical: 'b', horizontalDir: 'r'},
-    {x: 120*4, speed: 3, vertical: 't', horizontalDir: 'l'},
-    {x: 160*4, speed: 1, vertical: 'b', horizontalDir: 'l'},
-    {x: 200*4, speed: 1, vertical: 't', horizontalDir: 'r'},
-    {x: 240*4, speed: 3, vertical: 'b', horizontalDir: 'r'},
-    {x: 280*4, speed: 3, vertical: 't', horizontalDir: 'l'},
-    {x: 320*4, speed: 1, vertical: 'b', horizontalDir: 'l'},
-    {x: 360*4, speed: 1, vertical: 't', horizontalDir: 'r'},
-    {x: 80, speed: 2, vertical: 't', horizontalDir: 'r'},
-    {x: 80*6, speed: 3, vertical: 'b', horizontalDir: 'r'},
-    {x: 120*6, speed: 3, vertical: 't', horizontalDir: 'l'},
-    {x: 160*6, speed: 1, vertical: 'b', horizontalDir: 'l'},
-    {x: 200*6, speed: 1, vertical: 't', horizontalDir: 'r'},
-    {x: 240*6, speed: 3, vertical: 'b', horizontalDir: 'r'},
-    {x: 280*6, speed: 3, vertical: 't', horizontalDir: 'l'},
-    {x: 320*6, speed: 1, vertical: 'b', horizontalDir: 'l'},
-    {x: 360*6, speed: 1, vertical: 't', horizontalDir: 'r'},
-    {x: 80, speed: 2, vertical: 't', horizontalDir: 'r'},
-    {x: 80*8, speed: 3, vertical: 'b', horizontalDir: 'r'},
-    {x: 120*8, speed: 3, vertical: 't', horizontalDir: 'l'},
-    {x: 160*8, speed: 1, vertical: 'b', horizontalDir: 'l'},
-    {x: 200*8, speed: 1, vertical: 't', horizontalDir: 'r'},
-    {x: 240*8, speed: 3, vertical: 'b', horizontalDir: 'r'},
-    {x: 280*8, speed: 3, vertical: 't', horizontalDir: 'l'},
-    {x: 320*8, speed: 1, vertical: 'b', horizontalDir: 'l'},
-    {x: 360*8, speed: 1, vertical: 't', horizontalDir: 'r'},
+    // {x: 120*4, speed: 3, vertical: 't', horizontalDir: 'l'},
+    // {x: 160*4, speed: 1, vertical: 'b', horizontalDir: 'l'},
+    // {x: 200*4, speed: 1, vertical: 't', horizontalDir: 'r'},
+    // {x: 240*4, speed: 3, vertical: 'b', horizontalDir: 'r'},
+    // {x: 280*4, speed: 3, vertical: 't', horizontalDir: 'l'},
+    // {x: 320*4, speed: 1, vertical: 'b', horizontalDir: 'l'},
+    // {x: 360*4, speed: 1, vertical: 't', horizontalDir: 'r'},
+    // {x: 80, speed: 2, vertical: 't', horizontalDir: 'r'},
+    // {x: 80*6, speed: 3, vertical: 'b', horizontalDir: 'r'},
+    // {x: 120*6, speed: 3, vertical: 't', horizontalDir: 'l'},
+    // {x: 160*6, speed: 1, vertical: 'b', horizontalDir: 'l'},
+    // {x: 200*6, speed: 1, vertical: 't', horizontalDir: 'r'},
+    // {x: 240*6, speed: 3, vertical: 'b', horizontalDir: 'r'},
+    // {x: 280*6, speed: 3, vertical: 't', horizontalDir: 'l'},
+    // {x: 320*6, speed: 1, vertical: 'b', horizontalDir: 'l'},
+    // {x: 360*6, speed: 1, vertical: 't', horizontalDir: 'r'},
+    // {x: 80, speed: 2, vertical: 't', horizontalDir: 'r'},
+    // {x: 80*8, speed: 3, vertical: 'b', horizontalDir: 'r'},
+    // {x: 120*8, speed: 3, vertical: 't', horizontalDir: 'l'},
+    // {x: 160*8, speed: 1, vertical: 'b', horizontalDir: 'l'},
+    // {x: 200*8, speed: 1, vertical: 't', horizontalDir: 'r'},
+    // {x: 240*8, speed: 3, vertical: 'b', horizontalDir: 'r'},
+    // {x: 280*8, speed: 3, vertical: 't', horizontalDir: 'l'},
+    // {x: 320*8, speed: 1, vertical: 'b', horizontalDir: 'l'},
+    // {x: 360*8, speed: 1, vertical: 't', horizontalDir: 'r'},
 ]
 
 const Utils = {
@@ -141,6 +173,11 @@ const Utils = {
         let player = new Audio();
         player.src = sound;
         player.play();
+    },
+    sleep: async function(time) {
+        return new Promise((resolve) => {
+            setTimeout(resolve, time);
+        })
     }
 }
 
@@ -189,16 +226,22 @@ function Enemy() {
             
             context.moveTo(C.width, E.y - 15);
             context.lineTo(C.width, E.y + 15);
-            context.lineTo(E.x, C.height / 2);
+            context.lineTo(E.x, E.y);
             // context.moveTo(300, E.y - 15);
             // context.lineTo(300, E.y + 15);
             // context.lineTo(280, C.height / 2);
             context.fill();
+            if (game_won) {
+                E.y++;
+            }
         });
+        if (game_won) {
+            E.bullet = null;
+        }
         E.bullet && E.bullet.render();
     }
 
-    E.update = () => {
+    E.update = async () => {
         if (lastPlanet && E.bullet == null) {
             const P = Utils.calculateDistance(lastPlanet, {x: lastPlanet.x, y: E.y});
             const H = Utils.calculateDistance(E, lastPlanet);
@@ -218,9 +261,19 @@ function Enemy() {
                 Utils.playSound(explosion);
                 const targetPlanet = E.bullet.targetPlanet;
                 targetPlanet.bulletsCount++;
-                if (targetPlanet.bulletsCount > 8) {
+                let bulletsCount = targetPlanet.bulletsCount;
+                const HEALTH = Math.floor((MAX_BULLETS - bulletsCount) * 100 / MAX_BULLETS);
+                if (HEALTH < 100) {
+                    HT = new CrispText();
+                    HT.setText(`HEALTH:${HEALTH}/100`,
+                        targetPlanet.x + 20, 
+                        targetPlanet.y + (targetPlanet.y > C.height / 2 ? -1 : 1) * (PLANET_WIDTH / 2 + 20), 
+                        HEALTH > 25 ? 'white': 'red');
+                }
+                if (targetPlanet.bulletsCount >= MAX_BULLETS) {
                     // destroy Planet
                     console.log('removing planet');
+                    G.init();
                     if (targetPlanet.hasPlayer) {
                         // Game Over
                         console.log('Game over!');
@@ -385,6 +438,7 @@ function PlanetSet() {
                     context.fill();
 
                     let bulletsCount = planet.bulletsCount;
+                    
                     const coords = [
                         { x: planet.x + PLANET_WIDTH / 2 - DAMAGE_WIDTH / 2, y: planet.y },
                         { x: planet.x, y: planet.y + PLANET_HEIGHT / 2 - DAMAGE_WIDTH / 2},
@@ -394,10 +448,10 @@ function PlanetSet() {
                     let i = 0, coord = null;
                     while (bulletsCount) {
                         coord = coords[i % 4];
-                        let g = context.createRadialGradient(coord.x, coord.y, DAMAGE_WIDTH / 2, coord.x, coord.y, DAMAGE_WIDTH * 2);
-                        g.addColorStop(0, `hsla(0, 0%, 0%, 0.5)`);
-                        g.addColorStop(1, `hsla(0, 0%, 50%, 0.5)`);
-                        context.fillStyle = g;
+                        // let g = context.createRadialGradient(coord.x, coord.y, DAMAGE_WIDTH / 2, coord.x, coord.y, DAMAGE_WIDTH * 2);
+                        // g.addColorStop(0, `hsla(0, 0%, 0%, 0.5)`);
+                        // g.addColorStop(1, `hsla(0, 0%, 50%, 0.5)`);
+                        context.fillStyle = 'hsla(0, 0%, 50%, 0.5)';
                         
                         context.beginPath();
                         context.arc(coord.x, coord.y, DAMAGE_WIDTH / 2, 0, 10);
@@ -515,6 +569,22 @@ function Player(x, y) {
                 const inLowerHalf = (planet) => planet.y > C.height / 2;
                 if (intersectingPlanet = PS.isPlayerIntersecting(PS.attached.filter(inLowerHalf))) {
                     Utils.playSound(hit);
+                    if (intersectingPlanet.isMoving) {
+                        PC.meta.connectedPlanets++;
+                        PC.setText(`${PC.meta.connectedPlanets}/${PC.meta.totalPlanets} planets online`, P.x + VIEW_WIDTH / 3, C.height / 2);
+                        if (PC.meta.connectedPlanets === PC.meta.totalPlanets) {
+                            console.log('win!');
+                            game_won = true;
+                            WT = new CrispText(P.x + 2 * (VIEW_WIDTH / 3), CANVAS_HEIGHT / 2, true);
+                            WT.setText('@all: Let\'s kill the beast', P.x + 2 * (VIEW_WIDTH / 3), CANVAS_HEIGHT / 2);
+                            if (currentTime.time < bestTime.time) {
+                                bestTime.time = currentTime.time;
+                                bestTime.dom.innerText = currentTime.dom.innerText;
+                                HS = new CrispText(P.x + 2 * (VIEW_WIDTH / 3), CANVAS_HEIGHT / 2 + 20, false);
+                                HS.setText('Congrats! High Score achieved!', P.x + 2 * (VIEW_WIDTH / 3), CANVAS_HEIGHT / 2 + 20);
+                            }
+                        }
+                    }
                     if (lastPlanet) lastPlanet.hasPlayer = false;
                     intersectingPlanet.hasPlayer = true;
                     intersectingPlanet.isMoving = false;
@@ -546,6 +616,22 @@ function Player(x, y) {
                     // Using P.x doesn't cause the issue of showing some weird X position where objects meet
                     // At the same time it does cause that slip on intersection
                     Utils.playSound(hit);
+                    if (intersectingPlanet.isMoving) {
+                        PC.meta.connectedPlanets++;
+                        PC.setText(`${PC.meta.connectedPlanets}/${PC.meta.totalPlanets} planets online`, P.x + VIEW_WIDTH / 3, C.height / 2);
+                        if (PC.meta.connectedPlanets === PC.meta.totalPlanets) {
+                            console.log('win!');
+                            game_won = true;
+                            WT = new CrispText(P.x + 2 * (VIEW_WIDTH / 3), CANVAS_HEIGHT / 2, true);
+                            WT.setText('@all: Let\'s kill the beast', P.x + 2 * (VIEW_WIDTH / 3), CANVAS_HEIGHT / 2);
+                            if (currentTime.time < bestTime.time) {
+                                bestTime.time = currentTime.time;
+                                bestTime.dom.innerText = currentTime.dom.innerText;
+                                HS = new CrispText(P.x + 2 * (VIEW_WIDTH / 3), CANVAS_HEIGHT / 2 + 20, false);
+                                HS.setText('Congrats! High Score achieved!', P.x + 2 * (VIEW_WIDTH / 3), CANVAS_HEIGHT / 2 + 20);
+                            }
+                        }
+                    }
                     if (lastPlanet) lastPlanet.hasPlayer = false;
                     intersectingPlanet.hasPlayer = true;
                     intersectingPlanet.isMoving = false;
@@ -571,16 +657,150 @@ function Player(x, y) {
     }
 }
 
+function CrispText(x, y, bordered) {
+    const CT = {};
+    CT.x = x;
+    CT.y = y;
+    CT.text = '';
+    CT.renderCount = 0;
+    CT.bordered = bordered;
+    CT.meta = {};
+    CT.setText = (text, x, y, color) => {
+        CT.text = text;
+        CT.renderCount = 200;
+        CT.x = Math.min(Math.max(x, CRISP_TEXT_WIDTH / 2), C.width - CRISP_TEXT_WIDTH);
+        CT.y = y;
+        CT.color = color;
+    }
+    CT.render = () => {
+        if (CT.renderCount > 0) {
+            Utils.renderOnce(() => {
+                if (CT.bordered) {
+                    context.strokeStyle='white';
+                    context.strokeRect(CT.x - CRISP_TEXT_WIDTH / 2, CT.y - CRISP_TEXT_HEIGHT / 2, CRISP_TEXT_WIDTH, CRISP_TEXT_HEIGHT);
+                }
+                context.fillStyle = CT.color || '#ecf0f1';
+                context.textAlign = 'left';
+                context.font = '14px sans-serif';       
+                context.fillText(CT.text, CT.x - CRISP_TEXT_WIDTH / 2 + 10, CT.y);
+            });
+            CT.renderCount--;
+        }
+    }
+    return CT;
+}
+
+function TextBox() {
+    TB = this;
+    TB.textArr = [];
+
+    TB.newMessage = async function(text) {
+
+        context.save();
+        
+        let translations = 0;
+
+        context.fillStyle = '#ecf0f1';
+        context.textAlign = 'left';
+        context.font = mobile ? '10px sans-serif': '14px sans-serif';
+
+        function waitForTranslateLoop() {
+            return new Promise((resolve) => {
+                const translateLoop = setInterval(() => {
+                    // context.clearRect(VIEW_WIDTH / 2 - DIALOG_WIDTH / 2, C.height / 2 - DIALOG_HEIGHT / 2, DIALOG_WIDTH, DIALOG_HEIGHT);
+                    context.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    
+                    context.strokeStyle='white';
+                    context.strokeRect(VIEW_WIDTH / 2 - DIALOG_WIDTH / 2, C.height / 2 - DIALOG_HEIGHT / 2, DIALOG_WIDTH, DIALOG_HEIGHT);
+                    
+                    TB.textArr.forEach((textMsg) => {
+                        const textY = C.height / 2 + DIALOG_HEIGHT / 2 - textMsg.translateY - 10;
+                        const textX = VIEW_WIDTH / 2 - DIALOG_WIDTH / 2 + 10;
+                        context.fillText(textMsg.text, textX, textY);
+                        textMsg.translateY += translations;
+                    });
+                    translations++;
+                    if (translations > 8) {
+                        clearInterval(translateLoop);
+                        resolve();
+                    }
+                }, 30);
+            });
+        }
+
+        await waitForTranslateLoop();
+
+        Utils.playSound(message);
+        const textY = C.height / 2 + DIALOG_HEIGHT / 2 - 10;
+        const textX = VIEW_WIDTH / 2 - DIALOG_WIDTH / 2 + 10;
+        context.fillText(text, textX, textY);
+
+        await Utils.sleep(2000);
+        TB.textArr.push({
+            text,
+            translateY: 0
+        });
+
+        context.restore();
+        
+    }
+}
+
+function Time() {
+    const T = this;
+    T.time = 0;
+    document.getElementsByClassName('current-time')[0].classList.remove('hidden');
+    document.getElementsByClassName('best-time')[0].classList.remove('hidden');
+    T.dom = document.getElementsByClassName('current-time__timer')[0];
+    T.dom.innerText = '00:00',
+    T.reset = () => {
+        T.time = 0;
+        T.dom.innerText = '00:00';
+    },
+    T.increment = () => {
+        T.time++;
+        T.dom.innerText = T.convertToText(T.time);
+    },
+    T.convertToText = (time) => {
+        const min = T.pad(String(Math.floor(time / 60)));
+        const sec = T.pad(String(time % 60));
+        return `${min}:${sec}`;
+    },
+    T.pad = (timeStr) => {
+        if (timeStr.length === 1) {
+            return `0${timeStr[0]}`;
+        }
+        return timeStr;
+    }
+}
+
 function Game() {
-    let PrevPlayerY = null;
+
     G = this;
-    P = new Player(PLANET_WIDTH, C.height / 2);
-    WS = new WireSet();
-    GP = new GunPointer(30);
-    PS = new PlanetSet();
-    E = new Enemy();
+
+    currentTime = new Time();
+    setInterval(() => {
+        currentTime.increment();
+    }, 1000);
 
     G.init = () => {
+        Utils.playSound(init);
+        currentTime.reset();
+        DOM.scrollLeft = 0;
+        Player_dY = 0;
+        lastPlanet = null;
+        lastX = 0;
+        PrevPlayerY = null;
+        G = this;
+        P = new Player(PLANET_WIDTH, C.height / 2);
+        GP = new GunPointer(30);
+        WS = new WireSet();
+        PS = new PlanetSet();
+        E = new Enemy();
+        TB = new TextBox();
+        PC = new CrispText(P.x + VIEW_WIDTH / 3, C.height / 2, true);
+        PC.meta.connectedPlanets = 0;
+        PC.meta.totalPlanets = PLANETS.length;
         PLANETS.forEach((planet) => {
             PS.addPlanet(planet.x, planet.speed, planet.vertical, planet.horizontalDir);
         });
@@ -596,6 +816,10 @@ function Game() {
         GP.render();
         P.render();
         E.render();
+        PC.render();
+        HT && HT.render();
+        HS && HS.render();
+        WT && WT.render();
     }
 
     G.update = () => {
@@ -628,45 +852,124 @@ function Game() {
     
 }
 
-onload = function() {
+onload = async function() {
     C = D.querySelector('#canvas');
     C.width = CANVAS_WIDTH;
     C.height = CANVAS_HEIGHT;
     context = C.getContext('2d');
 
-    new Game();
+    context.fillStyle = 'white';
+    context.textAlign = 'left';
+    context.font = mobile ? '12px Courier New' : '18px Courier New';
+    // Together Again
+    // The world is in danger, an evil alien spaceship Tara has broken all connections between the planets
+    // and they have all gone offline!
+    // Only your planet Zobi remains that still has some connectivity left
+    // It's your job now to connect the world again - Only when y'all be together again is when Tara will be destroyed
+    // Beware though, Tara has its eyes on you and will keep attacking the places you got to
+
+    // Controls
+    // Move your mouse to position the gun pointer
+    // Move your finger
+    // Click anywhere on the screen to throw the wire at the desired location
+    // Release touch
+
+    // Play
+    // Level
+    // Easy - Tara has just woken up from sleep
+    // Medium - Tara is fierce, so better not go near it
+    // Hard - No matter where you, Tara is not going to spare you
+    context.fillText('Together Again', VIEW_WIDTH / 3 - 100, C.height / 2);
+    context.strokeStyle='white';
+    context.strokeRect(2 * VIEW_WIDTH / 3 - PLAY_BTN_WIDTH / 2, C.height / 2 - PLAY_BTN_HEIGHT / 2, PLAY_BTN_WIDTH, PLAY_BTN_HEIGHT);
+    
+    context.fillText('Play', 2 * VIEW_WIDTH / 3 - PLAY_BTN_WIDTH / 2 + 10, C.height / 2);
+}
+
+const checkPlayButtonClicked = async function(evt) {
+
+    const targetX = evt.x || (evt.touches && evt.touches[0].clientX);
+    const targetY = evt.y || (evt.touches && evt.touches[0].clientY);
+
+    if (targetX > 2 * VIEW_WIDTH / 3 - PLAY_BTN_WIDTH / 2 && targetX < 2 * VIEW_WIDTH / 3 + PLAY_BTN_WIDTH / 2 && 
+        targetY > C.height / 2 - PLAY_BTN_HEIGHT / 2 && targetY < C.height / 2 + PLAY_BTN_HEIGHT / 2) {
+
+        game_started = true;
+        // only touchend event is required for mobile gameplay
+        window.removeEventListener("touchstart", handleClick, true);
+        window.addEventListener("touchend", handleClick, true);
+        context.clearRect(0, 0, C.width, C.height);
+
+        let text = new TextBox();
+
+        await text.newMessage('Little Nobi: Hello, is anyone online ?');
+        await text.newMessage('0 / 29 planets online');
+        await text.newMessage('Oh no, looks like ');
+        await text.newMessage('And now my eyes are on you !!');
+        await text.newMessage('Nobi: Waaaaat! Noooo');
+
+        // text = new TextBox();
+
+        // await text.newMessage('I am gonna reconnect everyone through my special wire');
+        // await text.newMessage('Coz only when we are Together Again');
+        // await text.newMessage('is when you will be destroyed !');
+
+        // await text.newMessage('The world is in grave danger!');
+        await text.newMessage('Tadka, the alien spaceship');
+        await text.newMessage('has destroyed the connectivity of all the planets.');
+        // await text.newMessage('Only your planet Zobi remains.');
+        // await text.newMessage('Rest all planets have gone Offline')
+        await text.newMessage('I have to re-connect the world');
+        await text.newMessage('through my special wires..');
+        await text.newMessage('Only when we are Together Again');
+        await text.newMessage('is when Tadka will be destroyed !');
+        await text.newMessage('Let\'s go .!');
+
+        setTimeout(() => {
+            new Game();
+        }, 2000);
+    }
 }
 
 const handleMovement = (evt) => {
-    const posX = evt.clientX || evt.targetTouches[0].clientX;
+    const posX = evt.clientX || (evt.targetTouches && evt.targetTouches[0].clientX);
     const movementX = posX - lastX;
     lastX = posX;
-    if (!P.crossing) {
+    if (P && !P.crossing) {
         GP.theta = Math.min(POINTER_MAX_ANGLE, Math.max(POINTER_MIN_ANGLE, GP.theta - movementX));
     }
 }
 
-const handleClick = () => {
-    if (P.crossing) {
+const handleClick = (evt) => {
+    if (!game_started) {
+        game_started = true;
+        new Game();
+        // checkPlayButtonClicked(evt);
+        return;
+    }
+    if (P && P.crossing) {
         return;
     }
     Utils.playSound(jump);
-    P.crossing = true;
-    WS.addWire(
-        P.crossingStart.x,
-        P.crossingStart.y,
-        P.x,
-        P.y
-    );
-    P.crossingStart = {
-        x: P.x,
-        y: P.y
-    };
+    if (P) {
+        P.crossing = true;
+        WS.addWire(
+            P.crossingStart.x,
+            P.crossingStart.y,
+            P.x,
+            P.y
+        );
+        P.crossingStart = {
+            x: P.x,
+            y: P.y
+        };
+    }
+    
 }
 
 if (mobile) {
     window.addEventListener("touchmove", handleMovement, true);
-    window.addEventListener("touchend", handleClick, true);
+    window.addEventListener("touchstart", handleClick, true);
 } else {
     window.addEventListener("mousemove", handleMovement, true);
     window.addEventListener("click", handleClick, true)
