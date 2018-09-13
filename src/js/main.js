@@ -26,7 +26,7 @@ let D = document,
     ENEMY_WIDTH = 10,
     ENEMY_HEIGHT = 10,
     ENEMY_SPEED = 10,
-    POINTER_LENGTH = 60,
+    POINTER_LENGTH = CANVAS_HEIGHT / 6,
     POINTER_MAX_ANGLE = 160,
     POINTER_MIN_ANGLE = 20,
     PLAYER_GUN_GAP = 0,
@@ -35,7 +35,8 @@ let D = document,
     PLANET_SPEED = 10,
     BULLET_WIDTH = 40,
     BULLET_HEIGHT = 10,
-    BULLET_SPEED = 10,
+    BULLET_SPEED = mobile ? 5: 10,
+    WINNING_BULLET_SPEED = 30,
     DAMAGE_WIDTH = PLANET_WIDTH / 2,
     DIALOG_WIDTH = (mobile ? 2: 1) * VIEW_WIDTH / 3,
     DIALOG_HEIGHT = 2 * CANVAS_HEIGHT / 3,
@@ -46,6 +47,8 @@ let D = document,
     PLAY_BTN_WIDTH = 120,
     game_started = false,
     game_won = false,
+    game_won_scrolled = false,
+    game_won_bullets_fired = false,
     currentTime = null,
     bestTime = {
         time: 99999999,
@@ -79,31 +82,31 @@ const jump = jsfxr([0,,0.1948,0.1242,0.3918,0.7943,0.0103,-0.5478,,,,,,0.3884,0.
 const PLANETS = [
     {x: 80, speed: 2, vertical: 't', horizontalDir: 'r'},
     {x: 80*4, speed: 3, vertical: 'b', horizontalDir: 'r'},
-    // {x: 120*4, speed: 3, vertical: 't', horizontalDir: 'l'},
-    // {x: 160*4, speed: 1, vertical: 'b', horizontalDir: 'l'},
-    // {x: 200*4, speed: 1, vertical: 't', horizontalDir: 'r'},
-    // {x: 240*4, speed: 3, vertical: 'b', horizontalDir: 'r'},
-    // {x: 280*4, speed: 3, vertical: 't', horizontalDir: 'l'},
-    // {x: 320*4, speed: 1, vertical: 'b', horizontalDir: 'l'},
-    // {x: 360*4, speed: 1, vertical: 't', horizontalDir: 'r'},
-    // {x: 80, speed: 2, vertical: 't', horizontalDir: 'r'},
-    // {x: 80*6, speed: 3, vertical: 'b', horizontalDir: 'r'},
-    // {x: 120*6, speed: 3, vertical: 't', horizontalDir: 'l'},
-    // {x: 160*6, speed: 1, vertical: 'b', horizontalDir: 'l'},
-    // {x: 200*6, speed: 1, vertical: 't', horizontalDir: 'r'},
-    // {x: 240*6, speed: 3, vertical: 'b', horizontalDir: 'r'},
-    // {x: 280*6, speed: 3, vertical: 't', horizontalDir: 'l'},
-    // {x: 320*6, speed: 1, vertical: 'b', horizontalDir: 'l'},
-    // {x: 360*6, speed: 1, vertical: 't', horizontalDir: 'r'},
-    // {x: 80, speed: 2, vertical: 't', horizontalDir: 'r'},
-    // {x: 80*8, speed: 3, vertical: 'b', horizontalDir: 'r'},
-    // {x: 120*8, speed: 3, vertical: 't', horizontalDir: 'l'},
-    // {x: 160*8, speed: 1, vertical: 'b', horizontalDir: 'l'},
-    // {x: 200*8, speed: 1, vertical: 't', horizontalDir: 'r'},
-    // {x: 240*8, speed: 3, vertical: 'b', horizontalDir: 'r'},
-    // {x: 280*8, speed: 3, vertical: 't', horizontalDir: 'l'},
-    // {x: 320*8, speed: 1, vertical: 'b', horizontalDir: 'l'},
-    // {x: 360*8, speed: 1, vertical: 't', horizontalDir: 'r'},
+    {x: 120*4, speed: 3, vertical: 't', horizontalDir: 'l'},
+    {x: 160*4, speed: 1, vertical: 'b', horizontalDir: 'l'},
+    {x: 200*4, speed: 1, vertical: 't', horizontalDir: 'r'},
+    {x: 240*4, speed: 3, vertical: 'b', horizontalDir: 'r'},
+    {x: 280*4, speed: 3, vertical: 't', horizontalDir: 'l'},
+    {x: 320*4, speed: 1, vertical: 'b', horizontalDir: 'l'},
+    {x: 360*4, speed: 1, vertical: 't', horizontalDir: 'r'},
+    {x: 80, speed: 2, vertical: 't', horizontalDir: 'r'},
+    {x: 80*6, speed: 3, vertical: 'b', horizontalDir: 'r'},
+    {x: 120*6, speed: 3, vertical: 't', horizontalDir: 'l'},
+    {x: 160*6, speed: 1, vertical: 'b', horizontalDir: 'l'},
+    {x: 200*6, speed: 1, vertical: 't', horizontalDir: 'r'},
+    {x: 240*6, speed: 3, vertical: 'b', horizontalDir: 'r'},
+    {x: 280*6, speed: 3, vertical: 't', horizontalDir: 'l'},
+    {x: 320*6, speed: 1, vertical: 'b', horizontalDir: 'l'},
+    {x: 360*6, speed: 1, vertical: 't', horizontalDir: 'r'},
+    {x: 80, speed: 2, vertical: 't', horizontalDir: 'r'},
+    {x: 80*8, speed: 3, vertical: 'b', horizontalDir: 'r'},
+    {x: 120*8, speed: 3, vertical: 't', horizontalDir: 'l'},
+    {x: 160*8, speed: 1, vertical: 'b', horizontalDir: 'l'},
+    {x: 200*8, speed: 1, vertical: 't', horizontalDir: 'r'},
+    {x: 240*8, speed: 3, vertical: 'b', horizontalDir: 'r'},
+    {x: 280*8, speed: 3, vertical: 't', horizontalDir: 'l'},
+    {x: 320*8, speed: 1, vertical: 'b', horizontalDir: 'l'},
+    {x: 360*8, speed: 1, vertical: 't', horizontalDir: 'r'},
 ]
 
 const Utils = {
@@ -146,6 +149,7 @@ const Utils = {
         return dist < r ? true: false;
     },
     scrollIntoView: () => {
+        if (game_won) return;
         const currentValue = DOM.scrollLeft;
         const finalValue = Math.max(Math.min(P.x - VIEW_WIDTH / 3, C.width - VIEW_WIDTH), 0);
 
@@ -168,6 +172,20 @@ const Utils = {
                 DOM.scrollLeft = currentScroll - 10;
             }, 10);
         }
+    },
+    winningScroll: () => {
+        const currentValue = DOM.scrollLeft;
+        const finalValue = CANVAS_WIDTH - VIEW_WIDTH;
+
+        const inc = setInterval(() => {
+            const currentScroll = DOM.scrollLeft;
+            if (currentScroll >= finalValue) {
+                game_won_scrolled = true;
+                clearInterval(inc);
+                return;
+            }
+            DOM.scrollLeft = currentScroll + 10;
+        }, 10);
     },
     playSound: (sound) => {
         let player = new Audio();
@@ -210,6 +228,35 @@ function Bullet(x, y, theta, targetPlanet, top) {
     };
 }
 
+function WinningBullet(x, y, theta, top) {
+    const B = this;
+    B.x = x;
+    B.y = y;
+    B.theta = theta;
+    B.top = top;
+
+    B.isTravellingUp = () => B.top;
+
+    B.update = () => {
+        const radians = (B.theta / 180) * PI;
+        const nextX = B.x + WINNING_BULLET_SPEED * Math.cos(radians);
+        const nextY = B.y + (B.isTravellingUp() ? -1 : 1) * WINNING_BULLET_SPEED * Math.sin(radians);
+        
+        B.x = nextX;
+        B.y = nextY;
+    };
+
+    B.render = () => {
+        Utils.renderOnce(() => {
+            context.fillStyle='orange';
+            context.translate(B.x + BULLET_WIDTH / 2, B.y + BULLET_HEIGHT / 2);
+            context.rotate((B.isTravellingUp() ? 1 : -1) * PI / 180 * B.theta);
+            context.fillRect(-BULLET_WIDTH / 2, -BULLET_HEIGHT / 2, BULLET_WIDTH, BULLET_HEIGHT);
+        });
+    };
+    return B;
+}
+
 function Enemy() {
     E = this;
     E.x = C.width - 40;
@@ -231,7 +278,7 @@ function Enemy() {
             // context.lineTo(300, E.y + 15);
             // context.lineTo(280, C.height / 2);
             context.fill();
-            if (game_won) {
+            if (game_won_bullets_fired) {
                 E.y++;
             }
         });
@@ -249,6 +296,9 @@ function Enemy() {
             E.bullet = new Bullet(E.x, C.height / 2, theta, lastPlanet, lastPlanet.y < C.height / 2);
         } else if (E.bullet !== null) {
             E.bullet.update();
+            if (E.bullet.x < 0 || E.bullet.x > CANVAS_WIDTH || E.bullet.y > CANVAS_HEIGHT || E.bullet.y < 0) {
+                E.bullet = null;
+            }
             if (Utils.isCircleRectangleIntersecting(
                 E.bullet.targetPlanet.x,
                 E.bullet.targetPlanet.y,
@@ -362,6 +412,7 @@ function Planet(x, y, speed, dir) {
         isMoving: true,
         hasPlayer: false,
         wireHolders: [],
+        bullet: null,
         bulletsCount: 0
     };
 }
@@ -481,7 +532,9 @@ function PlanetSet() {
                     context.arc(wireHolder.x, wireHolder.y, 3, 0, 10);
                     context.fill();
                 });
-            })
+            });
+
+            planet.bullet && planet.bullet.render();
         });
     }
 
@@ -507,6 +560,27 @@ function PlanetSet() {
             // }
 
             prevPlanet = planet;
+
+            if (game_won_scrolled && planet.bullet == null) {
+                const P = Utils.calculateDistance(E, {x: E.x, y: planet.y});
+                const H = Utils.calculateDistance(E, planet);
+                const theta = Math.asin(P / H) * 180 / PI; // Sin-1(P/H)
+                planet.bullet = new WinningBullet(planet.x, planet.y, theta, lastPlanet.y > C.height / 2);
+            } else if (planet.bullet !== null) {
+                planet.bullet.update();
+                if (Utils.isCircleRectangleIntersecting(
+                    E.x,
+                    E.y,
+                    ENEMY_WIDTH / 2,
+                    planet.bullet.x,
+                    planet.bullet.y,
+                    BULLET_WIDTH,
+                    BULLET_HEIGHT
+                )) {
+                    Utils.playSound(explosion);
+                    planet.bullet = null;
+                }
+            }
         });
         prevPlanet = null
     }
@@ -575,14 +649,7 @@ function Player(x, y) {
                         if (PC.meta.connectedPlanets === PC.meta.totalPlanets) {
                             console.log('win!');
                             game_won = true;
-                            WT = new CrispText(P.x + 2 * (VIEW_WIDTH / 3), CANVAS_HEIGHT / 2, true);
-                            WT.setText('@all: Let\'s kill the beast', P.x + 2 * (VIEW_WIDTH / 3), CANVAS_HEIGHT / 2);
-                            if (currentTime.time < bestTime.time) {
-                                bestTime.time = currentTime.time;
-                                bestTime.dom.innerText = currentTime.dom.innerText;
-                                HS = new CrispText(P.x + 2 * (VIEW_WIDTH / 3), CANVAS_HEIGHT / 2 + 20, false);
-                                HS.setText('Congrats! High Score achieved!', P.x + 2 * (VIEW_WIDTH / 3), CANVAS_HEIGHT / 2 + 20);
-                            }
+                            Utils.winningScroll();
                         }
                     }
                     if (lastPlanet) lastPlanet.hasPlayer = false;
@@ -622,14 +689,7 @@ function Player(x, y) {
                         if (PC.meta.connectedPlanets === PC.meta.totalPlanets) {
                             console.log('win!');
                             game_won = true;
-                            WT = new CrispText(P.x + 2 * (VIEW_WIDTH / 3), CANVAS_HEIGHT / 2, true);
-                            WT.setText('@all: Let\'s kill the beast', P.x + 2 * (VIEW_WIDTH / 3), CANVAS_HEIGHT / 2);
-                            if (currentTime.time < bestTime.time) {
-                                bestTime.time = currentTime.time;
-                                bestTime.dom.innerText = currentTime.dom.innerText;
-                                HS = new CrispText(P.x + 2 * (VIEW_WIDTH / 3), CANVAS_HEIGHT / 2 + 20, false);
-                                HS.setText('Congrats! High Score achieved!', P.x + 2 * (VIEW_WIDTH / 3), CANVAS_HEIGHT / 2 + 20);
-                            }
+                            Utils.winningScroll();
                         }
                     }
                     if (lastPlanet) lastPlanet.hasPlayer = false;
@@ -804,6 +864,9 @@ function Game() {
         PLANETS.forEach((planet) => {
             PS.addPlanet(planet.x, planet.speed, planet.vertical, planet.horizontalDir);
         });
+        game_won_scrolled = false;
+        game_won = false;
+        game_won_bullets_fired = false;
     };
 
     G.render = () => {
@@ -826,6 +889,24 @@ function Game() {
         PS.update();
         P.update();
         E.update();
+        if (game_won_scrolled) {
+            game_won_scrolled = false;
+            WT = new CrispText(CANVAS_WIDTH - 100, CANVAS_HEIGHT / 3, true);
+            WT.setText('@all: Let\'s kill the beast', CANVAS_WIDTH - 100, CANVAS_HEIGHT / 3);
+            // fire the bullets
+            setTimeout(() => {
+                game_won_bullets_fired = true;
+                if (currentTime.time < bestTime.time) {
+                    bestTime.time = currentTime.time;
+                    bestTime.dom.innerText = currentTime.dom.innerText;
+                    HS = new CrispText(CANVAS_WIDTH - 100, 2 * CANVAS_HEIGHT / 3, false);
+                    HS.setText('Congrats! High Score achieved!', CANVAS_WIDTH - 100, 2 * CANVAS_HEIGHT / 3);
+                }
+                setTimeout(() => {
+                    G.init();
+                }, 2000);
+            }, 2000);
+        }
     }
 
     G.clear = () => {
@@ -904,9 +985,9 @@ const checkPlayButtonClicked = async function(evt) {
 
         await text.newMessage('Little Nobi: Hello, is anyone online ?');
         await text.newMessage('0 / 29 planets online');
-        await text.newMessage('Oh no, looks like ');
-        await text.newMessage('And now my eyes are on you !!');
-        await text.newMessage('Nobi: Waaaaat! Noooo');
+        await text.newMessage('Oh no, looks like..');
+        // await text.newMessage('And now my eyes are on you !!');
+        // await text.newMessage('Nobi: Waaaaat! Noooo');
 
         // text = new TextBox();
 
@@ -942,9 +1023,9 @@ const handleMovement = (evt) => {
 
 const handleClick = (evt) => {
     if (!game_started) {
-        game_started = true;
-        new Game();
-        // checkPlayButtonClicked(evt);
+        // game_started = true;
+        // new Game();
+        checkPlayButtonClicked(evt);
         return;
     }
     if (P && P.crossing) {
