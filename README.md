@@ -1,6 +1,8 @@
 # js13kgames-2018
 Together Again- My game entry for JS13kGames2018
 
+Play the Game: https://js13kgames.com/games/together-again/index.html
+
 Based on the theme - OFFLINE
 
 ## About the game
